@@ -139,6 +139,13 @@ void STLEncoder::finish(prtx::GenerateContext& /*context*/) {
 	soh->close(h, 0, 0);
 }
 
+struct EncoderOption {
+	std::wstring key;
+	double order;
+	int32_t group;
+	std::wstring label;
+	std::wstring description;
+};
 
 /**
  * Create the STL encoder factory singleton and define the default options.
@@ -152,8 +159,13 @@ STLEncoderFactory* STLEncoderFactory::createInstance() {
 	encoderInfoBuilder.setType(prt::CT_GEOMETRY);
 	encoderInfoBuilder.setExtension(STL_EXT);
 
-	// optionally we could setup a validator
-	// encoderInfoBuilder.setValidator(prtx::EncodeOptionsValidatorPtr(new MyOptionsValidator()));
+	EncoderOption eoBaseName = {
+	        .key = EO_BASE_NAME,
+	        .order = 0.0,
+	        .group = 0,
+	        .label = L"Base Name",
+	        .description = L"Sets the base name of the written STL file."
+	};
 
 	prtx::PRTUtils::AttributeMapBuilderPtr amb(prt::AttributeMapBuilder::create());
 	amb->setString(EO_BASE_NAME, L"stl_default_name"); // required by CityEngine
