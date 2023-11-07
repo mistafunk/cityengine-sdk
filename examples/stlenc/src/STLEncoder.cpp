@@ -4,7 +4,8 @@
  * This example demonstrates the usage of the PRTX interface
  * to write custom encoders.
  *
- * See README.md in https://github.com/Esri/cityengine-sdk for build instructions.
+ * See README.md in https://github.com/Esri/cityengine-sdk for build
+ * instructions.
  *
  * Written by Simon Haegler
  * Esri R&D Center Zurich, Switzerland
@@ -25,52 +26,50 @@
 
 #include "STLEncoder.h"
 
-#include "prtx/Shape.h"
-#include "prtx/ShapeIterator.h"
+#include "prtx/EncodeOptions.h"
+#include "prtx/EncoderInfoBuilder.h"
 #include "prtx/GenerateContext.h"
 #include "prtx/Geometry.h"
 #include "prtx/Mesh.h"
-#include "prtx/EncodeOptions.h"
-#include "prtx/EncoderInfoBuilder.h"
+#include "prtx/Shape.h"
+#include "prtx/ShapeIterator.h"
 
-#include <sstream>
 #include <cassert>
-
+#include <sstream>
 
 namespace {
 
-const wchar_t*     EO_BASE_NAME      = L"baseName";
-const wchar_t*     EO_ERROR_FALLBACK = L"errorFallback";
-const std::wstring STL_EXT           = L".stl";
-const wchar_t*     WNL               = L"\n";
+const wchar_t* EO_BASE_NAME = L"baseName";
+const wchar_t* EO_ERROR_FALLBACK = L"errorFallback";
+const std::wstring STL_EXT = L".stl";
+const wchar_t* WNL = L"\n";
 
-const prtx::EncodePreparator::PreparationFlags ENC_PREP_FLAGS = prtx::EncodePreparator::PreparationFlags()
-	.instancing(false)
-	.meshMerging(prtx::MeshMerging::ALL_OF_SAME_MATERIAL_AND_TYPE)
-	.triangulate(true)
-	.mergeVertices(true)
-	.cleanupVertexNormals(true)
-	.cleanupUVs(true)
-	.processVertexNormals(prtx::VertexNormalProcessor::SET_ALL_TO_FACE_NORMALS);
+const prtx::EncodePreparator::PreparationFlags ENC_PREP_FLAGS =
+        prtx::EncodePreparator::PreparationFlags()
+                .instancing(false)
+                .meshMerging(prtx::MeshMerging::ALL_OF_SAME_MATERIAL_AND_TYPE)
+                .triangulate(true)
+                .mergeVertices(true)
+                .cleanupVertexNormals(true)
+                .cleanupUVs(true)
+                .processVertexNormals(prtx::VertexNormalProcessor::SET_ALL_TO_FACE_NORMALS);
 
 } // namespace
 
-
-const std::wstring STLEncoder::ID          = L"com.esri.prt.examples.STLEncoder";
-const std::wstring STLEncoder::NAME        = L"STL Encoder";
+const std::wstring STLEncoder::ID = L"com.esri.prt.examples.STLEncoder";
+const std::wstring STLEncoder::NAME = L"STL Encoder";
 const std::wstring STLEncoder::DESCRIPTION = L"Example encoder for the STL format";
 
-
 /**
- * Setup two namespaces for mesh and material objects and initialize the encode preprator.
- * The namespaces are used to create unique names for all mesh and material objects.
+ * Setup two namespaces for mesh and material objects and initialize the encode
+ * preprator. The namespaces are used to create unique names for all mesh and
+ * material objects.
  */
 void STLEncoder::init(prtx::GenerateContext& /*context*/) {
 	prtx::NamePreparator::NamespacePtr nsMaterials = mNamePreparator.newNamespace();
 	prtx::NamePreparator::NamespacePtr nsMeshes = mNamePreparator.newNamespace();
 	mEncodePreparator = prtx::EncodePreparator::create(true, mNamePreparator, nsMeshes, nsMaterials);
 }
-
 
 /**
  * During encoding we collect the resulting shapes with the encode preparator.
@@ -83,15 +82,15 @@ void STLEncoder::encode(prtx::GenerateContext& context, size_t initialShapeIndex
 		for (prtx::ShapePtr shape = li->getNext(); shape.get() != nullptr; shape = li->getNext()) {
 			mEncodePreparator->add(context.getCache(), shape, is->getAttributeMap());
 		}
-	} catch(...) {
+	}
+	catch (...) {
 		mEncodePreparator->add(context.getCache(), *is, initialShapeIndex);
 	}
 }
 
-
 /**
- * After all shapes have been generated, we write the actual STL file by looping over the
- * finalized geometry instances.
+ * After all shapes have been generated, we write the actual STL file by looping
+ * over the finalized geometry instances.
  */
 void STLEncoder::finish(prtx::GenerateContext& /*context*/) {
 	prt::SimpleOutputCallbacks* soh = dynamic_cast<prt::SimpleOutputCallbacks*>(getCallbacks());
@@ -104,8 +103,8 @@ void STLEncoder::finish(prtx::GenerateContext& /*context*/) {
 	out << std::scientific;
 	out << L"solid " << baseName << L"\n";
 
-	for (const auto& instance: finalizedInstances) {
-		for (const prtx::MeshPtr& m: instance.getGeometry()->getMeshes()) {
+	for (const auto& instance : finalizedInstances) {
+		for (const prtx::MeshPtr& m : instance.getGeometry()->getMeshes()) {
 			for (uint32_t fi = 0, n = m->getFaceCount(); fi < n; fi++) {
 				const prtx::DoubleVector& vc = m->getVertexCoords();
 
@@ -115,15 +114,16 @@ void STLEncoder::finish(prtx::GenerateContext& /*context*/) {
 				uint32_t vi1 = 3 * fvi[1];
 				uint32_t vi2 = 3 * fvi[2];
 
-				// using first vertex normal as face normal, see call to processVertexNormals() above
+				// using first vertex normal as face normal, see call to
+				// processVertexNormals() above
 				const uint32_t* fvni = m->getFaceVertexNormalIndices(fi);
 				const double* fn = &m->getVertexNormalsCoords()[3 * fvni[0]];
 
 				out << L"facet normal " << fn[0] << L" " << fn[1] << L" " << fn[2] << WNL;
 				out << L"  outer loop" << WNL;
-				out << L"    vertex " << vc[vi0] << L" " << vc[vi0+1] << L" " << vc[vi0+2] << WNL;
-				out << L"    vertex " << vc[vi1] << L" " << vc[vi1+1] << L" " << vc[vi1+2] << WNL;
-				out << L"    vertex " << vc[vi2] << L" " << vc[vi2+1] << L" " << vc[vi2+2] << WNL;
+				out << L"    vertex " << vc[vi0] << L" " << vc[vi0 + 1] << L" " << vc[vi0 + 2] << WNL;
+				out << L"    vertex " << vc[vi1] << L" " << vc[vi1 + 1] << L" " << vc[vi1 + 2] << WNL;
+				out << L"    vertex " << vc[vi2] << L" " << vc[vi2 + 1] << L" " << vc[vi2 + 2] << WNL;
 				out << L"  endloop" << WNL;
 				out << L"endfacet" << WNL;
 			}
@@ -157,17 +157,17 @@ STLEncoderFactory* STLEncoderFactory::createInstance() {
 
 	prtx::PRTUtils::AttributeMapBuilderPtr amb(prt::AttributeMapBuilder::create());
 	amb->setString(EO_BASE_NAME, L"stl_default_name"); // required by CityEngine
-	amb->setBool(EO_ERROR_FALLBACK, prtx::PRTX_TRUE); // required by CityEngine
+	amb->setBool(EO_ERROR_FALLBACK, prtx::PRTX_TRUE);  // required by CityEngine
 	encoderInfoBuilder.setDefaultOptions(amb->createAttributeMap());
 
-	// CityEngine requires the following annotations to create an UI for an option:
-	// label, order, group and description
+	// CityEngine requires the following annotations to create an UI for an
+	// option: label, order, group and description
 	prtx::EncodeOptionsAnnotator eoa(encoderInfoBuilder);
 	eoa.option(EO_BASE_NAME)
-			.setLabel(L"Base Name")
-			.setOrder(0.0)
-			.setGroup(L"General Settings", 0.0)
-			.setDescription(L"Sets the base name of the written STL file.");
+	        .setLabel(L"Base Name")
+	        .setOrder(0.0)
+	        .setGroup(L"General Settings", 0.0)
+	        .setDescription(L"Sets the base name of the written STL file.");
 
 	// Hide the error fallback option in the CityEngine UI.
 	eoa.option(EO_ERROR_FALLBACK).flagAsHidden();
